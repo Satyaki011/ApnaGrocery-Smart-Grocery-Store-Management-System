@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Sales | GroceryOS{% endblock %}
+
+{% block content %}
+
+<header class="mb-4">
+  <h2 class="fw-bold">Sales Transactions</h2>
+  <p class="text-muted">Record and monitor revenue activity</p>
+</header>
+
+<!-- Record Sale -->
+<div class="card p-4 mb-4">
+  <h5 class="mb-3">Record New Sale</h5>
+
+  <form method="POST" class="row g-3">
+
+    <div class="col-md-6">
+      <label class="form-label">Product</label>
+      <select name="product_id" class="form-select" required>
+        <option value="">Select Product</option>
+        {% for product in products %}
+        <option value="{{ product.id }}">
+          {{ product.name }} | Stock: {{ product.quantity }} | ₹{{ "%.2f"|format(product.price) }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-md-4">
+      <label class="form-label">Quantity</label>
+      <input type="number" name="quantity" class="form-control" required>
+    </div>
+
+    <div class="col-md-2 d-flex align-items-end">
+      <button class="btn btn-warning w-100">Record</button>
+    </div>
+
+  </form>
+</div>
+
+<!-- Sales Table -->
+<div class="card p-4">
+  <h5 class="mb-3">Transaction History</h5>
+
+  {% if sales %}
+  <table class="table table-striped align-middle">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Product</th>
+        <th>Quantity</th>
+        <th>Date</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for sale in sales %}
+      <tr>
+        <td>#{{ sale.id }}</td>
+        <td>{{ sale.product.name }}</td>
+        <td>{{ sale.quantity }}</td>
+<td>{{ sale.created_at.strftime('%d %b %Y, %I:%M %p') if sale.created_at else 'N/A' }}</td>        <td><span class="badge bg-success">Completed</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="text-muted text-center">No sales recorded yet.</div>
+  {% endif %}
+
+</div>
+
+{% endblock %}

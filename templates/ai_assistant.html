@@ -1,0 +1,420 @@
+
+{% extends "base.html" %}
+
+{% block title %}AI Assistant | ApnaGrocery{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row g-4">
+        <!-- AI Chat Interface -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm" style="background: var(--card-bg);">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <h4 class="mb-0">
+                        <i class="bi bi-robot me-2"></i>AI Assistant
+                    </h4>
+                    <p class="text-secondary small mb-0">Ask me anything about your grocery business!</p>
+                </div>
+                
+                <div class="card-body" style="height: 500px; overflow-y: auto;" id="chatContainer">
+                    <!-- Welcome Message -->
+                    <div class="chat-message bot-message mb-3">
+                        <div class="message-avatar bot-avatar">
+                            <i class="bi bi-robot"></i>
+                        </div>
+                        <div class="message-content">
+                            <div class="message-text">
+                                👋 Hello! I'm your AI Assistant for ApnaGrocery.
+                                <br><br>
+                                I can help you with:
+                                <ul class="mb-0 mt-2">
+                                    <li>📊 Inventory status and stock levels</li>
+                                    <li>💰 Sales and revenue analysis</li>
+                                    <li>🚚 Supplier information</li>
+                                    <li>🏆 Top selling products</li>
+                                    <li>⚠️ Stock alerts and warnings</li>
+                                    <li>📈 Complete business analysis</li>
+                                </ul>
+                                <br>
+                                <strong>Try asking:</strong> "How's my inventory?" or "Show me sales"
+                            </div>
+                            <div class="message-time">Just now</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Chat Input -->
+                <div class="card-footer bg-transparent border-0 pt-0">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="chatInput" 
+                               placeholder="Ask me anything about your business..." 
+                               autocomplete="off">
+                        <button class="btn btn-primary" id="sendBtn">
+                            <i class="bi bi-send"></i> Send
+                        </button>
+                    </div>
+                    <div class="mt-2 d-flex flex-wrap gap-2">
+                        <button class="btn btn-sm btn-outline-secondary quick-btn" data-query="How's my inventory?">
+                            📊 Inventory
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary quick-btn" data-query="Show me sales">
+                            💰 Sales
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary quick-btn" data-query="Any alerts?">
+                            ⚠️ Alerts
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary quick-btn" data-query="Analyze my business">
+                            📈 Analysis
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary quick-btn" data-query="Top products">
+                            🏆 Top Products
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- AI Insights Panel -->
+        <div class="col-lg-4">
+            <!-- Live Insights -->
+            <div class="card border-0 shadow-sm mb-4" style="background: var(--card-bg);">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0">
+                        <i class="bi bi-lightbulb me-2 text-warning"></i>Live Insights
+                    </h5>
+                </div>
+                <div class="card-body" id="insightsContainer">
+                    {% if insights %}
+                        {% for insight in insights %}
+                        <div class="alert alert-{{ 'danger' if insight.type == 'danger' else 'warning' if insight.type == 'warning' else 'success' if insight.type == 'success' else 'info' }} d-flex align-items-start py-2 mb-2">
+                            <i class="bi bi-{{ insight.icon }} me-2 mt-1"></i>
+                            <div>
+                                <strong>{{ insight.title }}</strong>
+                                <p class="mb-0 small">{{ insight.message }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-secondary py-4">
+                            <i class="bi bi-check-circle display-4"></i>
+                            <p class="mb-0 mt-2">All caught up! No issues.</p>
+                        </div>
+                    {% endif %}
+                    <button class="btn btn-sm btn-outline-primary w-100 mt-2" onclick="refreshInsights()">
+                        <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="card border-0 shadow-sm mb-4" style="background: var(--card-bg);">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0">
+                        <i class="bi bi-graph me-2"></i>Quick Stats
+                    </h5>
+                </div>
+                <div class="card-body" id="quickStats">
+                    <div class="text-center">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <span class="ms-2">Loading stats...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Commands Help -->
+            <div class="card border-0 shadow-sm" style="background: var(--card-bg);">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0">
+                        <i class="bi bi-question-circle me-2"></i>Commands
+                    </h5>
+                </div>
+                <div class="card-body py-2">
+                    <ul class="list-unstyled mb-0 small">
+                        <li class="mb-2"><code>inventory</code> - Stock levels</li>
+                        <li class="mb-2"><code>sales</code> - Revenue info</li>
+                        <li class="mb-2"><code>suppliers</code> - Vendors</li>
+                        <li class="mb-2"><code>top products</code> - Best sellers</li>
+                        <li class="mb-2"><code>alerts</code> - Warnings</li>
+                        <li><code>analyze</code> - Full report</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.chat-message {
+    display: flex;
+    gap: 12px;
+    max-width: 90%;
+}
+
+.chat-message.user-message {
+    flex-direction: row-reverse;
+    margin-left: auto;
+}
+
+.message-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.bot-avatar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.user-avatar {
+    background: var(--primary);
+    color: white;
+}
+
+.message-content {
+    background: var(--input-bg);
+    border-radius: 12px;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+}
+
+.bot-message .message-content {
+    border-bottom-left-radius: 4px;
+}
+
+.user-message .message-content {
+    background: var(--primary);
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+
+.message-text {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.message-text ul {
+    padding-left: 20px;
+}
+
+.user-message .message-text {
+    color: white;
+}
+
+.message-time {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.user-message .message-time {
+    color: rgba(255,255,255,0.7);
+    text-align: right;
+}
+
+.quick-btn {
+    font-size: 12px;
+    border-radius: 20px;
+}
+
+.quick-btn:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.stat-card {
+    background: var(--input-bg);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+    border: 1px solid var(--border);
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--primary);
+}
+
+.stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+</style>
+
+<script>
+// Chat functionality
+const chatContainer = document.getElementById('chatContainer');
+const chatInput = document.getElementById('chatInput');
+const sendBtn = document.getElementById('sendBtn');
+
+// Send message function
+function sendMessage(message) {
+    if (!message.trim()) return;
+    
+    // Add user message
+    addMessage(message, 'user');
+    
+    // Clear input
+    chatInput.value = '';
+    
+    // Show loading
+    const loadingId = addLoadingMessage();
+    
+    // Send to API
+    fetch('/ai/chat', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: message })
+    })
+    .then(response => response.json())
+    .then(data => {
+        removeMessage(loadingId);
+        addMessage(data.response, 'bot');
+    })
+    .catch(error => {
+        removeMessage(loadingId);
+        addMessage('Sorry, something went wrong. Please try again.', 'bot');
+    });
+}
+
+// Add message to chat
+function addMessage(text, sender) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chat-message ${sender}-message} mb-3`;
+    
+    const avatar = sender === 'bot' 
+        ? '<i class="bi bi-robot"></i>' 
+        : '<i class="bi bi-person"></i>';
+    
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    // Convert markdown-like formatting to HTML
+    let formattedText = text
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br>')
+        .replace(/• /g, '<br>• ')
+        .replace(/(📊|💰|🚚|🏆|⚠️|📈|✅|🔴|🟡|👋)/g, '<span class="me-1">$1</span>');
+    
+    messageDiv.innerHTML = `
+        <div class="message-avatar ${sender}-avatar">
+            ${avatar}
+        </div>
+        <div class="message-content">
+            <div class="message-text">${formattedText}</div>
+            <div class="message-time">${time}</div>
+        </div>
+    `;
+    
+    chatContainer.appendChild(messageDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+// Add loading message
+function addLoadingMessage() {
+    const id = 'loading-' + Date.now();
+    const messageDiv = document.createElement('div');
+    messageDiv.id = id;
+    messageDiv.className = 'chat-message bot-message mb-3';
+    
+    messageDiv.innerHTML = `
+        <div class="message-avatar bot-avatar">
+            <i class="bi bi-robot"></i>
+        </div>
+        <div class="message-content">
+            <div class="message-text">
+                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                Thinking...
+            </div>
+        </div>
+    `;
+    
+    chatContainer.appendChild(messageDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+    return id;
+}
+
+// Remove message
+function removeMessage(id) {
+    const msg = document.getElementById(id);
+    if (msg) msg.remove();
+}
+
+// Event listeners
+sendBtn.addEventListener('click', () => sendMessage(chatInput.value));
+
+chatInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendMessage(chatInput.value);
+});
+
+// Quick buttons
+document.querySelectorAll('.quick-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        sendMessage(btn.dataset.query);
+    });
+});
+
+// Refresh insights
+function refreshInsights() {
+    fetch('/ai/insights')
+        .then(response => response.json())
+        .then(data => {
+            // Update insights container
+            location.reload();
+        })
+        .catch(error => {
+            console.error('Error refreshing insights:', error);
+        });
+}
+
+// Load quick stats on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Load quick stats
+    fetch('/ai/inventory')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('quickStats').innerHTML = `
+                <div class="row g-2">
+                    <div class="col-6">
+                        <div class="stat-card">
+                            <div class="stat-value">${data.total_products}</div>
+                            <div class="stat-label">Products</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-card">
+                            <div class="stat-value">₹${data.total_value}</div>
+                            <div class="stat-label">Inventory Value</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-card">
+                            <div class="stat-value" style="color: var(--warning);">${data.low_stock}</div>
+                            <div class="stat-label">Low Stock</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-card">
+                            <div class="stat-value" style="color: var(--danger);">${data.out_of_stock}</div>
+                            <div class="stat-label">Out of Stock</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        })
+        .catch(error => {
+            document.getElementById('quickStats').innerHTML = '<p class="text-danger">Error loading stats</p>';
+        });
+});
+</script>
+{% endblock %}
+
